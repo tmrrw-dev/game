@@ -1,0 +1,13 @@
+{
+  "name": "satoshi-digital-gold",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Telegram Mini App clicker/idle mining game prototype",
+  "main": "server.js",
+  "scripts": {"start":"node server.js"},
+  "dependencies": {
+    "better-sqlite3": "^11.8.1",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2"
+  }
+}
