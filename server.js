@@ -5,7 +5,8 @@ const Database = require('better-sqlite3');
 const path = require('path');
 
 const app = express();
-const db = new Database(path.join(__dirname, 'game.sqlite'));
+const DB_DIR = process.env.RAILWAY_VOLUME_MOUNT_PATH || __dirname;
+const db = new Database(path.join(DB_DIR, 'game.sqlite'));
 const PORT = Number(process.env.PORT || 3000);
 const BOT_TOKEN = process.env.BOT_TOKEN || '';
 const DEV_MODE = process.env.DEV_MODE === 'true';
