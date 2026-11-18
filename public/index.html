@@ -6,7 +6,25 @@
 <section class="mine-panel"><div class="section-kicker"><span class="live-dot"></span> MINING SESSION <span class="online">ONLINE</span></div>
 <div class="machine-wrap"><button type="button" class="machine" id="mineButton" aria-label="Добывать SAT"><div class="machine-top"><span>HASH UNIT</span><span class="led"></span></div><div class="machine-screen"><span class="screen-btc">₿</span><span class="screen-text">MINING</span></div><div class="machine-slots"><i></i><i></i><i></i><i></i><i></i></div><div class="machine-bottom"><span>ASIC-01</span><span>POWER <b>98%</b></span></div></button><div class="click-hint">НАЖМИ НА МАЙНЕР</div></div>
 <div class="mine-stats"><div><small>ЗА КЛИК</small><b>+<span id="perClick">1</span> SAT</b></div><div><small>ВСЕГО КЛИКОВ</small><b id="clicks">0</b></div></div></section>
-<section class="shop"><div class="section-heading"><div><small>РАСШИРЕНИЕ ФЕРМЫ</small><h2>Оборудование</h2></div><span class="shop-count" id="ownedCount">0 устройств</span></div>
+<section class="shop"><div class="section-heading"><div><div class="farm-summary">
+  <div class="farm-summary-title">МОЯ МАЙНИНГ-ФЕРМА</div>
+  <div class="farm-devices">
+    <div class="farm-device">
+      <span class="device-label">GPU</span>
+      <b id="gpuOwned">0</b>
+      <small>+<span id="gpuIncome">0</span> SAT / SEC</small>
+    </div>
+    <div class="farm-device">
+      <span class="device-label">ASIC</span>
+      <b id="asicOwned">0</b>
+      <small>+<span id="asicIncome">0</span> SAT / SEC</small>
+    </div>
+  </div>
+  <div class="farm-total">
+    <span>ОБЩАЯ МОЩНОСТЬ ФЕРМЫ</span>
+    <b>+<span id="farmIncome">0</span> SAT / SEC</b>
+  </div>
+</div><small>РАСШИРЕНИЕ ФЕРМЫ</small><h2>Оборудование</h2></div><span class="shop-count" id="ownedCount">0 устройств</span></div>
 <article class="item"><div class="item-icon gpu">GPU</div><div class="item-info"><b>GPU / BASIC</b><small>+1 SAT / сек · Видеокарта</small><strong>Цена: <span id="gpuCost">50</span> SAT</strong></div><button type="button" id="buyGpu">КУПИТЬ</button></article>
 <article class="item"><div class="item-icon asic">ASIC</div><div class="item-info"><b>ASIC / S-900</b><small>+8 SAT / сек · Майнер</small><strong>Цена: <span id="asicCost">350</span> SAT</strong></div><button type="button" id="buyAsic">КУПИТЬ</button></article>
 <article class="item upgrade"><div class="item-icon boost">×2</div><div class="item-info"><b>CLICK BOOST</b><small>+1 SAT за каждый клик</small><strong>Цена: <span id="boostCost">100</span> SAT</strong></div><button type="button" id="buyBoost">УЛУЧШИТЬ</button></article></section>
