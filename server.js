@@ -673,5 +673,5 @@ app.get('/health', (_, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(\`SATOSHI server listening on :\${PORT}\`);
+  console.log(`SATOSHI server listening on :${PORT}`);
 });
