@@ -937,7 +937,7 @@
       return;
     }
 
-    player.sat += player.rate;
+    player.sat += player.rate * 0.95;
 
     if ($('sat')) {
       $('sat').textContent = sat(player.sat);
