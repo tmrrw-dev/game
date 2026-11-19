@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS gpu_inventory (
 `);
 
 function ensureColumn(table, column, definition) {
-  const cols = db.prepare(\`PRAGMA table_info(\${table})\`).all();
+  const cols = db.prepare(`PRAGMA table_info(${table})`).all();
   if (!cols.some(c => c.name === column)) {
     db.exec(\`ALTER TABLE \${table} ADD COLUMN \${column} \${definition}\`);
   }
