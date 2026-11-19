@@ -360,10 +360,10 @@ app.post('/api/mine', authenticate, (req, res) => {
   const player = getPlayer(req.playerId, req.username);
   settle(player);
 
-  const now = Math.floor(Date.now() / 1000);
+const nowMs = Date.now();
 
-  // Простая защита от автоматической отправки сотен кликов в секунду.
-  if (now - player.last_click < 0.12) {
+// Защита от слишком частых запросов.
+if (nowMs - Number(player.last_click || 0) < 120) {
     return res.status(429).json({ error: 'Слишком быстро. Попробуй ещё раз.' });
   }
 
@@ -377,13 +377,13 @@ app.post('/api/mine', authenticate, (req, res) => {
         total_clicks = total_clicks + 1,
         last_click = ?
     WHERE telegram_id = ?
-  `).run(earned, now, player.telegram_id);
+  `).run(earned, nowMs, player.telegram_id);
 
   addPoolFund(poolPart);
 
   player.sat += earned;
   player.total_clicks += 1;
-  player.last_click = now;
+  player.last_click = nowMs;
 
   updatePoolEntry(player, 1);
 
