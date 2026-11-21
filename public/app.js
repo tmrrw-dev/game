@@ -9,6 +9,16 @@
   let player = null;
   let busy = false;
   let activePage = 'farm';
+  let halvingData = null;
+
+const HALVING_DATES = [
+  Date.UTC(2027, 1, 1),
+  Date.UTC(2027, 2, 3),
+  Date.UTC(2027, 3, 2),
+  Date.UTC(2027, 4, 12),
+  Date.UTC(2027, 6, 1),
+  Date.UTC(2027, 7, 30)
+];
 
   async function api(url, options = {}) {
     const r = await fetch(url, {
@@ -53,9 +63,86 @@
       maximumFractionDigits: 2
     });
   }
+  function renderHalving(info) {
+  if (!info) return;
 
-  function render(d) {
-    player = d;
+  halvingData = info;
+
+  const completed = Math.max(
+    0,
+    Math.min(5, Number(info.completedHalvings || 0))
+  );
+
+  const percent = Number(
+    info.rewardPercent ?? (Number(info.factor ?? 1) * 100)
+  );
+
+  if ($('halvingStage')) {
+    $('halvingStage').textContent =
+      completed === 0 ? 'LAUNCH' : `HALVING #${completed}`;
+  }
+
+  if ($('halvingPercent')) {
+    $('halvingPercent').textContent =
+      `${Number(percent).toLocaleString('ru-RU', {
+        maximumFractionDigits: 3
+      })}%`;
+  }
+
+  const rawNextAt = info.nextAt;
+  let nextAt = null;
+
+  if (typeof rawNextAt === 'number') {
+    nextAt = rawNextAt < 1e12 ? rawNextAt * 1000 : rawNextAt;
+  } else if (rawNextAt) {
+    nextAt = Date.parse(rawNextAt);
+  }
+
+  if ($('halvingTimer')) {
+    if (!Number.isFinite(nextAt)) {
+      $('halvingTimer').textContent = 'ВСЕ ЭТАПЫ ПРОЙДЕНЫ';
+    } else {
+      const left = Math.max(0, nextAt - Date.now());
+      const days = Math.floor(left / 86400000);
+      const hours = Math.floor((left % 86400000) / 3600000);
+      const minutes = Math.floor((left % 3600000) / 60000);
+      const seconds = Math.floor((left % 60000) / 1000);
+
+      $('halvingTimer').textContent =
+        `${days}д ${String(hours).padStart(2, '0')}:` +
+        `${String(minutes).padStart(2, '0')}:` +
+        `${String(seconds).padStart(2, '0')}`;
+    }
+  }
+
+  const now = Date.now();
+  const start = HALVING_DATES[completed];
+  const end = HALVING_DATES[completed + 1];
+
+  if ($('halvingProgress')) {
+    let progress = 0;
+
+    if (now >= HALVING_DATES[5]) {
+      progress = 100;
+    } else if (now >= start && end) {
+      progress = ((now - start) / (end - start)) * 100;
+    }
+
+    $('halvingProgress').style.width =
+      `${Math.max(0, Math.min(100, progress))}%`;
+  }
+
+  document.querySelectorAll('.halving-history > div')
+    .forEach((item, index) => {
+      item.classList.toggle('halving-done', index <= completed);
+      item.classList.toggle('halving-current', index === completed);
+    });
+}
+
+function render(d) {
+  player = d;
+
+  if (d.halving) renderHalving(d.halving);
 
     if ($('sat')) $('sat').textContent = sat(d.sat);
     if ($('gram')) $('gram').textContent = Number(d.gram || 0).toFixed(2);
@@ -77,7 +164,7 @@
 
     if ($('asicIncome')) {
       $('asicIncome').textContent = number(
-        d.asic * 8 + d.asicMk2 * 20 + d.asicMk3 * 50
+        d.asic * 2 + d.asicMk2 * 20 + d.asicMk3 * 50
       );
     }
 
@@ -152,9 +239,17 @@
 
   async function refresh() {
     try {
-      const d = await api('/api/session');
+const d = await api('/api/session');
 
-      render(d);
+render(d);
+
+if (!d.halving) {
+  try {
+    renderHalving(await api('/api/halving'));
+  } catch (_) {
+    // Совместимость со старой версией сервера.
+  }
+}
 
       if (d.offlineEarned > 0) {
         toast(`Пока тебя не было: +${sat(d.offlineEarned)} SAT`);
@@ -925,7 +1020,11 @@
   addStyles();
   addShop();
   refresh();
-
+  
+// Обновление обратного отсчёта SAT HALVING.
+setInterval(() => {
+  if (halvingData) renderHalving(halvingData);
+}, 1000);
   // Локальное обновление отображаемого баланса.
   setInterval(() => {
     if (
