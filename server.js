@@ -197,7 +197,7 @@ function power(p) {
   const raw =
     Number(p.gpu || 0) +
     Number(p.gpu_power || 0) +
-    Number(p.asic || 0) * 8 +
+    Number(p.asic || 0) * 2 +
     Number(p.asic_mk2 || 0) * 20 +
     Number(p.asic_mk3 || 0) * 50;
 
@@ -362,7 +362,7 @@ function settle(p) {
     Math.min(8 * 3600, now - Number(p.last_claim || now))
   );
 
-  const gross = elapsed * power(p);
+  const gross = elapsed * power(p) * 0.05;
   const poolPart = gross * 0.05;
   const earned = gross - poolPart;
 
