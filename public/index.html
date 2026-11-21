@@ -3,6 +3,39 @@
 <body><main class="app">
 <header class="topbar"><div class="brand"><span class="brand-mark">₿</span><div><b>SATOSHI</b><small>DIGITAL GOLD</small></div></div><div class="wallet"><span class="wallet-label">GRAM</span><b id="gram">0.00</b></div></header>
 <section class="balances"><div class="balance-card"><span>SAT BALANCE</span><strong id="sat">0</strong></div><div class="balance-card"><span>MINING RATE</span><strong><i id="rate">0</i> <em>/ sec</em></strong></div></section>
+  <section class="halving-panel">
+  <div class="halving-header">
+    <div>
+      <span class="halving-kicker">BITCOIN-INSPIRED ECONOMY</span>
+      <h2>SAT HALVING</h2>
+    </div>
+    <span class="halving-status" id="halvingStage">STAGE 0</span>
+  </div>
+
+  <div class="halving-reward">
+    <div>
+      <small>ТЕКУЩАЯ НАГРАДА</small>
+      <strong id="halvingPercent">100%</strong>
+    </div>
+    <div class="halving-countdown">
+      <small>ДО СЛЕДУЮЩЕГО HALVING</small>
+      <strong id="halvingTimer">Загрузка...</strong>
+    </div>
+  </div>
+
+  <div class="halving-track">
+    <div class="halving-track-fill" id="halvingProgress"></div>
+  </div>
+
+  <div class="halving-history">
+    <div><span>01 FEB 2027</span><b>LAUNCH · 100%</b></div>
+    <div><span>03 MAR 2027</span><b>HALVING #1 · 90%</b></div>
+    <div><span>02 APR 2027</span><b>HALVING #2 · 81%</b></div>
+    <div><span>12 MAY 2027</span><b>HALVING #3 · 72.9%</b></div>
+    <div><span>01 JUL 2027</span><b>HALVING #4 · 65.61%</b></div>
+    <div><span>30 AUG 2027</span><b>HALVING #5 · 59.049%</b></div>
+  </div>
+</section>
 <section class="mine-panel"><div class="section-kicker"><span class="live-dot"></span> MINING SESSION <span class="online">ONLINE</span></div>
 <div class="machine-wrap"><button type="button" class="machine" id="mineButton" aria-label="Добывать SAT"><div class="machine-top"><span>HASH UNIT</span><span class="led"></span></div><div class="machine-screen"><span class="screen-btc">₿</span><span class="screen-text">MINING</span></div><div class="machine-slots"><i></i><i></i><i></i><i></i><i></i></div><div class="machine-bottom"><span>ASIC-01</span><span>POWER <b>98%</b></span></div></button><div class="click-hint">НАЖМИ НА МАЙНЕР</div></div>
 <div class="mine-stats"><div><small>ЗА КЛИК</small><b>+<span id="perClick">1</span> SAT</b></div><div><small>ВСЕГО КЛИКОВ</small><b id="clicks">0</b></div></div></section>
