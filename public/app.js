@@ -1036,7 +1036,7 @@ setInterval(() => {
       return;
     }
 
-    player.sat += player.rate * 0.95;
+    player.sat += player.rate * 0.05 * 0.95 * (halvingData?.factor ?? 1);
 
     if ($('sat')) {
       $('sat').textContent = sat(player.sat);
