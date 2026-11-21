@@ -73,3 +73,102 @@
   font-size: 10px;
   white-space: nowrap;
 }
+/* SAT HALVING */
+.halving-panel {
+  margin: 18px 0;
+  padding: 17px;
+  background: linear-gradient(145deg, #1c1a14, #111214);
+  border: 1px solid #665022;
+  border-radius: 14px;
+  color: #f3e4bd;
+}
+
+.halving-header,
+.halving-reward {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.halving-kicker {
+  color: #b99548;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+}
+
+.halving-header h2 {
+  margin: 5px 0 14px;
+  font-size: 20px;
+  color: #f4c45e;
+}
+
+.halving-status {
+  padding: 6px 9px;
+  border: 1px solid #80632d;
+  border-radius: 6px;
+  color: #f4c45e;
+  font-size: 10px;
+}
+
+.halving-reward {
+  align-items: flex-end;
+}
+
+.halving-reward small {
+  display: block;
+  color: #999083;
+  font-size: 9px;
+  margin-bottom: 6px;
+}
+
+.halving-reward strong {
+  color: #f4c45e;
+  font-size: 23px;
+}
+
+.halving-countdown {
+  text-align: right;
+}
+
+.halving-countdown strong {
+  font-size: 14px;
+  color: #fff0ce;
+}
+
+.halving-track {
+  height: 6px;
+  margin: 16px 0;
+  overflow: hidden;
+  background: #393329;
+  border-radius: 10px;
+}
+
+.halving-track-fill {
+  height: 100%;
+  width: 0%;
+  background: #e8b84e;
+  border-radius: 10px;
+  transition: width .4s;
+}
+
+.halving-history {
+  display: grid;
+  gap: 9px;
+}
+
+.halving-history div {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 10px;
+}
+
+.halving-history span {
+  color: #999083;
+}
+
+.halving-history b {
+  color: #d9c18e;
+  text-align: right;
+}
