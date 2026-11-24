@@ -4,6 +4,9 @@
   "private": true,
   "description": "Telegram Mini App clicker/idle mining game prototype",
   "main": "server.js",
+  "engines": {
+  "node": "22.x"
+},
   "scripts": {"start":"node server.js"},
   "dependencies": {
     "better-sqlite3": "^11.8.1",
