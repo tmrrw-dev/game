@@ -172,16 +172,36 @@ const multiplier = baseTotal > 0
   ? Number(d.rate || 0) / baseTotal
   : 1;
 
+const gpuBase =
+  Number(d.gpu || 0) + Number(d.gpuPower || 0);
+
+const asicBase =
+  Number(d.asic || 0) * 2 +
+  Number(d.asicMk2 || 0) * 20 +
+  Number(d.asicMk3 || 0) * 50;
+
+const baseTotal = gpuBase + asicBase;
+
+const multiplier = baseTotal > 0
+  ? Number(d.rate || 0) / baseTotal
+  : 1;
+
+const halvingFactor = Number(d.halving?.factor ?? 1);
+const incomeMultiplier = 0.05 * 0.95 * halvingFactor;
+
 if ($('gpuIncome')) {
-  $('gpuIncome').textContent = sat(gpuBase * multiplier);
+  $('gpuIncome').textContent =
+    sat(gpuBase * multiplier * incomeMultiplier);
 }
 
 if ($('asicIncome')) {
-  $('asicIncome').textContent = sat(asicBase * multiplier);
+  $('asicIncome').textContent =
+    sat(asicBase * multiplier * incomeMultiplier);
 }
 
 if ($('farmIncome')) {
-  $('farmIncome').textContent = sat(d.rate);
+  $('farmIncome').textContent =
+    sat(Number(d.rate || 0) * incomeMultiplier);
 }
 
     if ($('farmIncome')) {
