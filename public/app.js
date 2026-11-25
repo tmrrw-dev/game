@@ -158,20 +158,7 @@ function render(d) {
       );
     }
 
-    const gpuBase =
-  Number(d.gpu || 0) + Number(d.gpuPower || 0);
-
-const asicBase =
-  Number(d.asic || 0) * 2 +
-  Number(d.asicMk2 || 0) * 20 +
-  Number(d.asicMk3 || 0) * 50;
-
-const baseTotal = gpuBase + asicBase;
-
-const multiplier = baseTotal > 0
-  ? Number(d.rate || 0) / baseTotal
-  : 1;
-
+    
 const gpuBase =
   Number(d.gpu || 0) + Number(d.gpuPower || 0);
 
@@ -203,10 +190,6 @@ if ($('farmIncome')) {
   $('farmIncome').textContent =
     sat(Number(d.rate || 0) * incomeMultiplier);
 }
-
-    if ($('farmIncome')) {
-      $('farmIncome').textContent = sat(d.rate);
-    }
 
     if ($('gpuCost')) $('gpuCost').textContent = number(d.costs.gpu);
     if ($('asicCost')) $('asicCost').textContent = number(d.costs.asic);
