@@ -68,6 +68,78 @@ for (const [name, def] of [
 const dayId = (t = Date.now()) =>
   new Date(t).toISOString().slice(0, 10);
 
+const HALVING_SCHEDULE = [
+  { at: Date.UTC(2027, 1, 1), label: 'Launch', factor: 1 },
+  { at: Date.UTC(2027, 2, 3), label: 'SAT HALVING #1', factor: 0.9 },
+  { at: Date.UTC(2027, 3, 2), label: 'SAT HALVING #2', factor: 0.81 },
+  { at: Date.UTC(2027, 4, 12), label: 'SAT HALVING #3', factor: 0.729 },
+  { at: Date.UTC(2027, 6, 1), label: 'SAT HALVING #4', factor: 0.6561 },
+  { at: Date.UTC(2027, 7, 30), label: 'SAT HALVING #5', factor: 0.59049 }
+];
+
+function halvingFactorAt(timestampMs = Date.now()) {
+  let factor = 1;
+  for (const event of HALVING_SCHEDULE) {
+    if (timestampMs >= event.at) factor = event.factor;
+    else break;
+  }
+  return factor;
+}
+
+function halvingWeightedSeconds(startSeconds, endSeconds) {
+  let cursor = startSeconds;
+  let weighted = 0;
+
+  while (cursor < endSeconds) {
+    const cursorMs = cursor * 1000;
+    const nextEvent = HALVING_SCHEDULE.find(event => event.at > cursorMs);
+    const segmentEnd = nextEvent
+      ? Math.min(endSeconds, Math.floor(nextEvent.at / 1000))
+      : endSeconds;
+
+    if (segmentEnd <= cursor) {
+      cursor = Math.min(endSeconds, cursor + 1);
+      continue;
+    }
+
+    weighted += (segmentEnd - cursor) * halvingFactorAt(cursorMs);
+    cursor = segmentEnd;
+  }
+
+  return weighted;
+}
+
+function halvingInfo(now = Date.now()) {
+  let currentStage = 0;
+  let current = HALVING_SCHEDULE[0];
+
+  for (let i = 0; i < HALVING_SCHEDULE.length; i++) {
+    if (now >= HALVING_SCHEDULE[i].at) {
+      currentStage = i;
+      current = HALVING_SCHEDULE[i];
+    }
+  }
+
+  const next = HALVING_SCHEDULE[currentStage + 1] || null;
+
+  return {
+    name: 'SAT HALVING',
+    currentStage,
+    completedHalvings: currentStage,
+    factor: current.factor,
+    rewardPercent: current.factor * 100,
+    nextAt: next ? next.at : null,
+    nextLabel: next ? next.label : null,
+    history: HALVING_SCHEDULE.map(event => ({
+      at: event.at,
+      label: event.label,
+      factor: event.factor,
+      rewardPercent: event.factor * 100,
+      passed: now >= event.at
+    }))
+  };
+}
+
 db.prepare(
   'INSERT OR IGNORE INTO pool_state(id,round_id,fund) VALUES(1,?,0)'
 ).run(dayId());
@@ -107,11 +179,10 @@ function verifyTelegramInitData(initData) {
   if (!authDate || Date.now() / 1000 - authDate > 86400) {
     return null;
   }
-
-  try {
+    try {
     const user = JSON.parse(params.get('user') || '{}');
-user.start_param = params.get('start_param') || '';
-return user;
+    user.start_param = params.get('start_param') || '';
+    return user;
   } catch {
     return null;
   }
@@ -125,8 +196,10 @@ function authenticate(req, res, next) {
   if (user?.id) {
     req.playerId = String(user.id);
     req.username = user.username || user.first_name || 'Miner';
+
     const match = /^ref_(\d+)$/.exec(user.start_param || '');
-req.referralCode = match ? match[1] : null;
+    req.referralCode = match ? match[1] : null;
+
     return next();
   }
 
@@ -148,19 +221,20 @@ function getPlayer(id, username, referralCode = null) {
 
   if (!p) {
     const now = Math.floor(Date.now() / 1000);
-    const referrerId =
-  referralCode && referralCode !== id &&
-  db.prepare(
-    'SELECT telegram_id FROM players WHERE telegram_id=?'
-  ).get(referralCode)
-    ? referralCode
-    : null;
 
-   db.prepare(`
-  INSERT INTO players
-  (telegram_id,username,last_claim,created_at,referrer_id)
-  VALUES(?,?,?,?,?)
-`).run(id, username, now, now, referrerId);
+    const referrerId =
+      referralCode && referralCode !== id &&
+      db.prepare(
+        'SELECT telegram_id FROM players WHERE telegram_id=?'
+      ).get(referralCode)
+        ? referralCode
+        : null;
+
+    db.prepare(`
+      INSERT INTO players
+      (telegram_id,username,last_claim,created_at,referrer_id)
+      VALUES(?,?,?,?,?)
+    `).run(id, username, now, now, referrerId);
 
     p = db.prepare(
       'SELECT * FROM players WHERE telegram_id=?'
@@ -247,7 +321,6 @@ function gpuDrop() {
 
   return { rarity: 'common', power: 1 };
 }
-
 function finishRound(oldRoundId) {
   const state = db.prepare(
     'SELECT * FROM pool_state WHERE id=1'
@@ -369,6 +442,56 @@ function updatePoolEntry(p, activity = 0) {
   );
 }
 
+// Реферальная награда: 50 SAT за первую добычу + 1% от каждой добычи.
+function applyReferralReward(playerId, minedAmount) {
+  const amount = Number(minedAmount || 0);
+  if (amount <= 0) return 0;
+
+  const player = db.prepare(`
+    SELECT referrer_id, referral_reward_paid
+    FROM players
+    WHERE telegram_id=?
+  `).get(playerId);
+
+  if (!player?.referrer_id) return 0;
+
+  const referrerExists = db.prepare(`
+    SELECT telegram_id FROM players WHERE telegram_id=?
+  `).get(player.referrer_id);
+
+  if (!referrerExists) return 0;
+
+  let totalBonus = 0;
+
+  db.transaction(() => {
+    let firstReward = 0;
+
+    if (!Number(player.referral_reward_paid || 0)) {
+      const marked = db.prepare(`
+        UPDATE players
+        SET referral_reward_paid=1
+        WHERE telegram_id=? AND referral_reward_paid=0
+      `).run(playerId);
+
+      if (marked.changes === 1) firstReward = 50;
+    }
+
+    const percentageReward = amount * 0.01;
+    totalBonus = firstReward + percentageReward;
+
+    if (totalBonus > 0) {
+      db.prepare(`
+        UPDATE players
+        SET sat=sat+?,
+            referral_bonus_total=referral_bonus_total+?
+        WHERE telegram_id=?
+      `).run(totalBonus, totalBonus, player.referrer_id);
+    }
+  })();
+
+  return totalBonus;
+}
+
 function settle(p) {
   const now = Math.floor(Date.now() / 1000);
 
@@ -377,7 +500,9 @@ function settle(p) {
     Math.min(8 * 3600, now - Number(p.last_claim || now))
   );
 
-  const gross = elapsed * power(p) * 0.05;
+  const effectiveStart = now - elapsed;
+  const weightedSeconds = halvingWeightedSeconds(effectiveStart, now);
+  const gross = weightedSeconds * power(p) * 0.05;
   const poolPart = gross * 0.05;
   const earned = gross - poolPart;
 
@@ -392,11 +517,11 @@ function settle(p) {
     p.last_claim = now;
 
     addPoolFund(poolPart);
+    applyReferralReward(p.telegram_id, gross);
   }
 
   return earned;
 }
-
 function snapshot(p, offline = 0) {
   const counts = db.prepare(`
     SELECT rarity,COUNT(*) AS count
@@ -441,13 +566,14 @@ function snapshot(p, offline = 0) {
     automation: p.automation || 0,
 
     bonuses: setBonuses(p),
-    rarityCounts
+    rarityCounts,
+    halving: halvingInfo()
   };
 }
 
 // Загрузка игрока.
 app.get('/api/session', authenticate, (req, res) => {
-  const p = getPlayer(req.playerId, req.username, req.referralCode)
+  const p = getPlayer(req.playerId, req.username, req.referralCode);
   const offline = settle(p);
 
   updatePoolEntry(p, 0);
@@ -473,7 +599,7 @@ app.post('/api/mine', authenticate, (req, res) => {
     });
   }
 
-  const gain = clickPower(p);
+  const gain = clickPower(p) * halvingFactorAt(now);
   const poolPart = gain * 0.05;
   const earned = gain - poolPart;
 
@@ -486,6 +612,7 @@ app.post('/api/mine', authenticate, (req, res) => {
   `).run(earned, now, p.telegram_id);
 
   addPoolFund(poolPart);
+  applyReferralReward(p.telegram_id, gain);
 
   p.sat = Number(p.sat || 0) + earned;
   p.total_clicks++;
@@ -587,7 +714,6 @@ app.post('/api/buy', authenticate, (req, res) => {
 
   res.json(snapshot(updated));
 });
-
 // Инвентарь видеокарт.
 app.get('/api/inventory', authenticate, (req, res) => {
   const p = getPlayer(req.playerId, req.username, req.referralCode);
@@ -659,7 +785,7 @@ app.get('/api/pool', authenticate, (req, res) => {
 app.get('/api/leaderboard', authenticate, (req, res) => {
   const rows = db.prepare(`
     SELECT username,sat,gpu,asic,boosts,total_clicks,
-      (gpu+asic*8+asic_mk2*20+asic_mk3*50+gpu_power) AS rate
+      (gpu+asic*2+asic_mk2*20+asic_mk3*50+gpu_power) AS rate
     FROM players
     ORDER BY rate DESC,total_clicks DESC,sat DESC
     LIMIT 20
@@ -674,7 +800,7 @@ app.get('/api/leaderboard', authenticate, (req, res) => {
   const position = db.prepare(`
     SELECT COUNT(*)+1 AS position
     FROM players
-    WHERE (gpu+asic*8+asic_mk2*20+asic_mk3*50+gpu_power)>?
+    WHERE (gpu+asic*2+asic_mk2*20+asic_mk3*50+gpu_power)>?
   `).get(myRate);
 
   res.json({
@@ -683,8 +809,33 @@ app.get('/api/leaderboard', authenticate, (req, res) => {
   });
 });
 
+app.get('/api/halving', authenticate, (req, res) => {
+  res.json(halvingInfo());
+});
+
+app.get('/api/referrals', authenticate, (req, res) => {
+  const p = getPlayer(req.playerId, req.username, req.referralCode);
+
+  const stats = db.prepare(`
+    SELECT
+      COUNT(*) AS invited,
+      COALESCE(SUM(referral_reward_paid), 0) AS activated
+    FROM players
+    WHERE referrer_id=?
+  `).get(p.telegram_id);
+
+  res.json({
+    link: `https://t.me/SathGoldBot?startapp=ref_${p.telegram_id}`,
+    invited: Number(stats.invited || 0),
+    activated: Number(stats.activated || 0),
+    earned: Number(p.referral_bonus_total || 0),
+    fixedReward: 50,
+    percentage: 1
+  });
+});
+
 app.get('/health', (_, res) => {
-  res.json({ ok: true, version: '0.3.0' });
+  res.json({ ok: true, version: '0.4.0' });
 });
 
 app.listen(PORT, () => {
