@@ -50,6 +50,9 @@ function ensureColumn(table, column, definition) {
 }
 
 ensureColumn('players', 'last_click', 'INTEGER NOT NULL DEFAULT 0');
+ensureColumn('players', 'referrer_id', 'TEXT');
+ensureColumn('players', 'referral_reward_paid', 'INTEGER NOT NULL DEFAULT 0');
+ensureColumn('players', 'referral_bonus_total', 'REAL NOT NULL DEFAULT 0');
 
 for (const [name, def] of [
   ['gpu_power', 'INTEGER NOT NULL DEFAULT 0'],
@@ -106,7 +109,9 @@ function verifyTelegramInitData(initData) {
   }
 
   try {
-    return JSON.parse(params.get('user') || '{}');
+    const user = JSON.parse(params.get('user') || '{}');
+user.start_param = params.get('start_param') || '';
+return user;
   } catch {
     return null;
   }
@@ -120,6 +125,8 @@ function authenticate(req, res, next) {
   if (user?.id) {
     req.playerId = String(user.id);
     req.username = user.username || user.first_name || 'Miner';
+    const match = /^ref_(\d+)$/.exec(user.start_param || '');
+req.referralCode = match ? match[1] : null;
     return next();
   }
 
@@ -134,18 +141,26 @@ function authenticate(req, res, next) {
   });
 }
 
-function getPlayer(id, username) {
+function getPlayer(id, username, referralCode = null) {
   let p = db.prepare(
     'SELECT * FROM players WHERE telegram_id=?'
   ).get(id);
 
   if (!p) {
     const now = Math.floor(Date.now() / 1000);
+    const referrerId =
+  referralCode && referralCode !== id &&
+  db.prepare(
+    'SELECT telegram_id FROM players WHERE telegram_id=?'
+  ).get(referralCode)
+    ? referralCode
+    : null;
 
-    db.prepare(`
-      INSERT INTO players(telegram_id,username,last_claim,created_at)
-      VALUES(?,?,?,?)
-    `).run(id, username, now, now);
+   db.prepare(`
+  INSERT INTO players
+  (telegram_id,username,last_claim,created_at,referrer_id)
+  VALUES(?,?,?,?,?)
+`).run(id, username, now, now, referrerId);
 
     p = db.prepare(
       'SELECT * FROM players WHERE telegram_id=?'
