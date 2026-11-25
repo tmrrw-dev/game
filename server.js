@@ -432,7 +432,7 @@ function snapshot(p, offline = 0) {
 
 // Загрузка игрока.
 app.get('/api/session', authenticate, (req, res) => {
-  const p = getPlayer(req.playerId, req.username);
+  const p = getPlayer(req.playerId, req.username, req.referralCode)
   const offline = settle(p);
 
   updatePoolEntry(p, 0);
@@ -446,7 +446,7 @@ app.get('/api/session', authenticate, (req, res) => {
 
 // Клик по центральной кнопке.
 app.post('/api/mine', authenticate, (req, res) => {
-  const p = getPlayer(req.playerId, req.username);
+  const p = getPlayer(req.playerId, req.username, req.referralCode);
 
   settle(p);
 
@@ -513,7 +513,7 @@ app.post('/api/buy', authenticate, (req, res) => {
     });
   }
 
-  const p = getPlayer(req.playerId, req.username);
+  const p = getPlayer(req.playerId, req.username, req.referralCode);
 
   settle(p);
 
@@ -575,7 +575,7 @@ app.post('/api/buy', authenticate, (req, res) => {
 
 // Инвентарь видеокарт.
 app.get('/api/inventory', authenticate, (req, res) => {
-  const p = getPlayer(req.playerId, req.username);
+  const p = getPlayer(req.playerId, req.username, req.referralCode);
 
   const items = db.prepare(`
     SELECT id,rarity,power,acquired_at
@@ -593,7 +593,7 @@ app.get('/api/inventory', authenticate, (req, res) => {
 
 // Информация о майнинг-пуле.
 app.get('/api/pool', authenticate, (req, res) => {
-  const p = getPlayer(req.playerId, req.username);
+  const p = getPlayer(req.playerId, req.username, req.referralCode);
 
   settle(p);
   updatePoolEntry(p, 0);
