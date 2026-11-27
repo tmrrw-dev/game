@@ -403,11 +403,104 @@ if (!d.halving) {
       shop: $('navShop'),
       pool: $('navPool'),
       rank: $('navRank'),
-      inventory: $('navInventory')
+         inventory: $('navInventory'),
+      referrals: $('navReferrals')
     })[page]?.classList.add('nav-active');
 
     if (page === 'pool') loadPool();
     if (page === 'rank') loadLeaderboard();
+    if (page === 'inventory') loadInventory();
+    if (page === 'referrals') loadReferrals();
+      // Реферальная программа.
+  async function loadReferrals() {
+    const p = ensurePanel();
+
+    p.hidden = false;
+    p.innerHTML = '<div class="extra-card">ЗАГРУЗКА РЕФЕРАЛЬНОЙ ПРОГРАММЫ...</div>';
+
+    try {
+      const d = await api('/api/referrals');
+
+      p.innerHTML = `
+        <div class="extra-heading">
+          <small>SATOSHI PARTNERS PROGRAM</small>
+          <h2>Реферальная программа</h2>
+          <p>Приглашай игроков и получай SAT с их добычи.</p>
+        </div>
+
+        <div class="extra-card referral-main">
+          <small>ТВОЙ РЕФЕРАЛЬНЫЙ БАЛАНС</small>
+          <strong>${sat(d.earned)} SAT</strong>
+          <span>Всего заработано на приглашениях</span>
+        </div>
+
+        <div class="extra-grid">
+          <div class="extra-card">
+            <small>ПРИГЛАШЕНО</small>
+            <strong>${number(d.invited)}</strong>
+          </div>
+
+          <div class="extra-card">
+            <small>АКТИВИРОВАНО</small>
+            <strong>${number(d.activated)}</strong>
+          </div>
+        </div>
+
+        <div class="extra-card">
+          <h3>ТВОЯ ПЕРСОНАЛЬНАЯ ССЫЛКА</h3>
+
+          <input
+            id="referralLink"
+            class="referral-input"
+            type="text"
+            readonly
+            value="${escapeHtml(d.link)}"
+          >
+
+          <button type="button" class="inventory-link" id="copyReferral">
+            КОПИРОВАТЬ ССЫЛКУ
+          </button>
+        </div>
+
+        <div class="extra-card">
+          <h3>УСЛОВИЯ НАГРАЖДЕНИЯ</h3>
+
+          <div class="referral-reward">
+            <b>+${number(d.fixedReward)} SAT</b>
+            <span>За первую добычу приглашённого игрока</span>
+          </div>
+
+          <div class="referral-reward">
+            <b>${number(d.percentage)}%</b>
+            <span>От каждой добычи приглашённого игрока</span>
+          </div>
+
+          <p class="extra-note">
+            Награда автоматически поступает на твой баланс SAT.
+            Приглашённый игрок также получает обычную награду за добычу.
+          </p>
+        </div>
+      `;
+
+      $('copyReferral')?.addEventListener('click', async () => {
+        const input = $('referralLink');
+
+        try {
+          await navigator.clipboard.writeText(d.link);
+          toast('Реферальная ссылка скопирована!');
+        } catch (e) {
+          input?.select();
+          input?.setSelectionRange(0, 99999);
+
+          const copied = document.execCommand('copy');
+          toast(copied ? 'Ссылка скопирована!' : 'Выдели и скопируй ссылку');
+        }
+      });
+
+    } catch (e) {
+      p.innerHTML = `<div class="extra-card">${escapeHtml(e.message)}</div>`;
+    }
+  }
     if (page === 'inventory') loadInventory();
 
     if (page === 'shop') {
@@ -720,7 +813,23 @@ if (!d.halving) {
       });
 
       nav.appendChild(b);
-      nav.style.gridTemplateColumns = 'repeat(5,1fr)';
+    }
+
+    if (nav && !$('navReferrals')) {
+      const b = document.createElement('button');
+
+      b.id = 'navReferrals';
+      b.innerHTML = '<span>♧</span>REF';
+
+      b.addEventListener('click', () => {
+        showPage('referrals');
+      });
+
+      nav.appendChild(b);
+    }
+
+    if (nav) {
+      nav.style.gridTemplateColumns = 'repeat(6, minmax(0, 1fr))';
     }
   }
 
@@ -1004,6 +1113,61 @@ if (!d.halving) {
 
       .item button:disabled {
         opacity: 0.35;
+      }
+            .referral-main strong {
+        display: block;
+        font-size: 30px;
+        color: var(--gold);
+        margin: 14px 0 7px;
+      }
+
+      .referral-main span {
+        font-size: 9px;
+        color: var(--muted);
+      }
+
+      .referral-input {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 12px;
+        margin: 5px 0 10px;
+        background: #101114;
+        border: 1px solid var(--line);
+        color: var(--gold);
+        font: 10px 'Roboto Mono';
+        border-radius: 4px;
+      }
+
+      .referral-reward {
+        padding: 12px 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .referral-reward b {
+        display: block;
+        color: var(--gold);
+        font-size: 19px;
+        margin-bottom: 5px;
+      }
+
+      .referral-reward span {
+        color: var(--muted);
+        font-size: 9px;
+      }
+
+      #navReferrals,
+      #navInventory {
+        font-size: 8px;
+        min-width: 0;
+        padding-left: 2px;
+        padding-right: 2px;
+      }
+
+      #navReferrals span,
+      #navInventory span {
+        display: block;
+        font-size: 15px;
+        margin-bottom: 3px;
       }
     `;
 
